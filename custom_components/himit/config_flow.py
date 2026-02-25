@@ -84,19 +84,34 @@ class HimitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    @staticmethod
+    def _home_id(home: dict) -> str:
+        """Extract home ID — API may return 'id', 'homeId', or 'home_id'."""
+        return str(home.get("id") or home.get("homeId") or home.get("home_id", ""))
+
+    @staticmethod
+    def _home_name(home: dict) -> str:
+        """Extract home name with fallbacks matching the API response."""
+        return (
+            home.get("defaultHomeName")
+            or home.get("homeName")
+            or home.get("name", "")
+        )
+
     async def async_step_home(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step 2 — select a home (only shown when account has >1 home)."""
         if user_input is not None:
             selected = next(
-                (h for h in self._homes if h["homeId"] == user_input[CONF_HOME_ID]),
+                (h for h in self._homes
+                 if self._home_id(h) == user_input[CONF_HOME_ID]),
                 self._homes[0],
             )
             return await self._create_entry(selected)
 
         home_options = {
-            h["homeId"]: h.get("homeName", h["homeId"])
+            self._home_id(h): self._home_name(h) or self._home_id(h)
             for h in self._homes
         }
         return self.async_show_form(
@@ -108,8 +123,8 @@ class HimitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _create_entry(self, home: dict) -> FlowResult:
         """Create the config entry with all credentials and token data."""
-        home_id   = home["homeId"]
-        home_name = home.get("homeName", home_id)
+        home_id   = self._home_id(home)
+        home_name = self._home_name(home) or home_id
 
         # Deduplicate — one entry per home
         await self.async_set_unique_id(f"himit_{home_id}")
