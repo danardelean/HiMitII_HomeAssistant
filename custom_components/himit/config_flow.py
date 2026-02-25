@@ -48,9 +48,6 @@ class HimitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             password = user_input[CONF_PASSWORD]
 
             session = async_get_clientsession(self.hass)
-            session.headers.update({
-                "User-Agent": "Hi-Mit II/1.3.5 (iPhone; iOS 26.3; Scale/3.00)"
-            })
             api = HimitAPI(session)
 
             try:
@@ -58,7 +55,7 @@ class HimitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 homes = await api.get_home_list(login_result["access_token"])
             except HimitAuthError:
                 errors["base"] = "invalid_auth"
-            except HimitAPIError as exc:
+            except (HimitAPIError, aiohttp.ClientError) as exc:
                 _LOGGER.error("Login failed: %s", exc)
                 errors["base"] = "cannot_connect"
             except Exception as exc:  # noqa: BLE001

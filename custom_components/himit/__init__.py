@@ -20,10 +20,6 @@ PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH, Platform.
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Hi-Mit II from a config entry."""
     session = async_get_clientsession(hass)
-    session.headers.update({
-        "User-Agent": "Hi-Mit II/1.3.5 (iPhone; iOS 26.3; Scale/3.00)"
-    })
-
     api         = HimitAPI(session)
     coordinator = HimitCoordinator(hass, api, entry)
 

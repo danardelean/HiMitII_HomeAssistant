@@ -17,6 +17,13 @@ from .const import (
     TIMEZONE, USER_AGENT,
 )
 
+_BASE_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "*/*",
+    "Accept-Encoding": "gzip, deflate, br",
+}
+_POST_HEADERS = {**_BASE_HEADERS, "Content-Type": "application/json; charset=utf-8"}
+
 
 # ── Crypto helpers (sync — microsecond operations, safe in event loop) ────────
 
@@ -121,17 +128,14 @@ class HimitAPI:
     async def _get(self, url: str, params: dict) -> dict:
         params = dict(params)
         params["sign"] = compute_sign(params)
-        async with self._session.get(url, params=params) as r:
+        async with self._session.get(url, params=params, headers=_BASE_HEADERS) as r:
             r.raise_for_status()
             return await r.json(content_type=None)
 
     async def _post(self, url: str, body: dict) -> dict:
         body = dict(body)
         body["sign"] = compute_sign(body)
-        async with self._session.post(
-            url, json=body,
-            headers={"Content-Type": "application/json; charset=utf-8"},
-        ) as r:
+        async with self._session.post(url, json=body, headers=_POST_HEADERS) as r:
             r.raise_for_status()
             return await r.json(content_type=None)
 
@@ -143,7 +147,7 @@ class HimitAPI:
         Returns dict with: accessToken, refreshToken, tokenExpireTime,
         refreshTokenExpiredTime, tokenCreateTime, customerId.
         """
-        body = _base_params(language="1") if False else {
+        body = {
             "languageId": "1",
             "randStr":    _rand(),
             "timeStamp":  _ts(),
@@ -242,7 +246,7 @@ class HimitAPI:
         async with self._session.post(
             f"{HMT_BASE}/himit-dshd/getDeviceProperty",
             json=body,
-            headers={"Content-Type": "application/json; charset=utf-8"},
+            headers=_POST_HEADERS,
         ) as r:
             r.raise_for_status()
             resp = await r.json(content_type=None)
@@ -284,7 +288,7 @@ class HimitAPI:
         async with self._session.post(
             f"{HMT_BASE}/himit-dshd/setDeviceProperty",
             json=body,
-            headers={"Content-Type": "application/json; charset=utf-8"},
+            headers=_POST_HEADERS,
         ) as r:
             r.raise_for_status()
             resp = await r.json(content_type=None)
