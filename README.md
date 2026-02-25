@@ -69,6 +69,39 @@ The integration handles authentication automatically:
 
 ---
 
+## Forcing a Data Refresh
+
+By default the integration polls every 30 seconds. If you need an immediate update there are two options:
+
+### 1. Built-in service call (no code changes needed)
+
+Call the standard Home Assistant service on any of the integration's entities:
+
+```yaml
+service: homeassistant.update_entity
+target:
+  entity_id: sensor.hi_mit_ii_circuit_1_water_temp
+```
+
+This triggers `coordinator.async_request_refresh()` immediately.
+
+### 2. Dedicated Refresh button entity
+
+A `button` platform can be added to expose a single **Refresh** button in the UI / dashboard:
+
+```python
+class HimitRefreshButton(HimitEntity, ButtonEntity):
+    _attr_name = "Refresh"
+    _attr_icon = "mdi:refresh"
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_request_refresh()
+```
+
+Press it from a dashboard card or use it in an automation and data updates instantly.
+
+---
+
 ## How it works
 
 This integration was built by reverse-engineering the official **Hi-Mit II Android APK**:
