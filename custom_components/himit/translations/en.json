@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Hi-Mit II",
+        "description": "Enter your Hisense Hi-Mit II account credentials.",
+        "data": {
+          "username": "Email address",
+          "password": "Password"
+        }
+      },
+      "home": {
+        "title": "Select home",
+        "description": "Your account has multiple homes. Select the one containing your heat pump.",
+        "data": {
+          "home_id": "Home"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Could not connect to the Hi-Mit II cloud. Check your internet connection.",
+      "no_homes":  "No homes found for this account.",
+      "unknown":   "Unexpected error — check the Home Assistant logs."
+    },
+    "abort": {
+      "already_configured": "This home is already configured."
+    }
+  }
+}

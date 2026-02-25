@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connetti Hi-Mit II",
+        "description": "Inserisci le credenziali del tuo account Hisense Hi-Mit II.",
+        "data": {
+          "username": "Indirizzo email",
+          "password": "Password"
+        }
+      },
+      "home": {
+        "title": "Seleziona abitazione",
+        "description": "Il tuo account ha più abitazioni. Seleziona quella che contiene la pompa di calore.",
+        "data": {
+          "home_id": "Abitazione"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Email o password non validi.",
+      "cannot_connect": "Impossibile connettersi al cloud Hi-Mit II. Verifica la connessione a internet.",
+      "no_homes": "Nessuna abitazione trovata per questo account.",
+      "unknown": "Errore imprevisto — controlla i log di Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Questa abitazione è già configurata."
+    }
+  }
+}
