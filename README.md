@@ -19,8 +19,6 @@ A custom Home Assistant integration for the **Hisense Hi-Mit II Air-to-Water hea
 | `switch` | Circuit 2 (Heating) | Enable / disable Circuit 2 |
 | `switch` | Domestic Hot Water | Enable / disable DHW heating |
 | `switch` | Swimming Pool | Enable / disable pool heating |
-| `switch` | Circuit 1 Room 1–4 | Per-room switches for Circuit 1 |
-| `switch` | Circuit 2 Room 1–4 | Per-room switches for Circuit 2 |
 | `number` | Circuit 1 Setpoint | Water temperature target for Circuit 1 (°C) |
 | `number` | Circuit 2 Setpoint | Water temperature target for Circuit 2 (°C) |
 | `number` | DHW Setpoint | Domestic hot water target temperature (°C) |

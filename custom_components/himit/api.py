@@ -294,3 +294,45 @@ class HimitAPI:
             resp = await r.json(content_type=None)
 
         return self._check(resp, "setDeviceProperty")
+
+    async def usr_control_record(
+        self,
+        access_token: str,
+        wifi_id: str,
+        device_id: str,
+        properties: list[dict],
+    ) -> dict:
+        """Log a control action (called after setDeviceProperty).
+
+        The mobile app calls this endpoint after every setDeviceProperty to
+        confirm/commit the change.  Same body as setDeviceProperty minus
+        the controlRecord flag.
+        """
+        body = {
+            "languageId":  LANGUAGE_ID,
+            "randStr":     _rand(),
+            "timeStamp":   _ts(),
+            "timezone":    TIMEZONE,
+            "version":     "2.1",
+            "accessToken": access_token,
+            "appId":       APP_ID,
+            "appSecret":   APP_SECRET,
+            "sourceId":    SOURCE_ID,
+            "wifiId":      wifi_id,
+            "deviceId":    device_id,
+        }
+        props_json = json.dumps(properties, separators=(",", ":"))
+        sign_params = dict(body)
+        sign_params["properties"] = props_json
+        body["sign"] = compute_sign(sign_params)
+        body["properties"] = properties
+
+        async with self._session.post(
+            f"{HMT_BASE}/himit-dshd/usrControlRecord",
+            json=body,
+            headers=_POST_HEADERS,
+        ) as r:
+            r.raise_for_status()
+            resp = await r.json(content_type=None)
+
+        return self._check(resp, "usrControlRecord")

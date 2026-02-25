@@ -1,13 +1,14 @@
 """DataUpdateCoordinator for Hi-Mit II — polls device state every 30 s."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import HimitAPI, HimitAPIError, HimitAuthError
@@ -163,16 +164,30 @@ class HimitCoordinator(DataUpdateCoordinator):
 
     # ── Control helpers ───────────────────────────────────────────────────────
 
+    # Seconds to wait before polling the cloud after a command,
+    # giving the server time to reflect the new state.
+    _COMMAND_REFRESH_DELAY = 3
+
     async def async_set_property(
         self, wifi_id: str, device_id: str, cmd_type: str, cmd_value: str
     ) -> None:
-        """Send a single control command and immediately request a refresh."""
+        """Send a control command, log it, optimistically update, then confirm.
+
+        Mirrors the mobile app flow: setDeviceProperty → usrControlRecord → refresh.
+        """
         await self._ensure_token()
+        props = [{"cmdType": cmd_type, "cmdValue": cmd_value}]
         await self.api.set_device_property(
-            self.access_token, wifi_id, device_id,
-            [{"cmdType": cmd_type, "cmdValue": cmd_value}],
+            self.access_token, wifi_id, device_id, props,
         )
-        await self.async_request_refresh()
+        try:
+            await self.api.usr_control_record(
+                self.access_token, wifi_id, device_id, props,
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("usrControlRecord failed (non-fatal)", exc_info=True)
+        self._optimistic_update(device_id, cmd_type, cmd_value)
+        self._schedule_delayed_refresh()
 
     async def async_set_multiple(
         self, wifi_id: str, device_id: str, commands: list[dict]
@@ -182,7 +197,42 @@ class HimitCoordinator(DataUpdateCoordinator):
         await self.api.set_device_property(
             self.access_token, wifi_id, device_id, commands
         )
-        await self.async_request_refresh()
+        try:
+            await self.api.usr_control_record(
+                self.access_token, wifi_id, device_id, commands,
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("usrControlRecord failed (non-fatal)", exc_info=True)
+        for cmd in commands:
+            self._optimistic_update(device_id, cmd["cmdType"], cmd["cmdValue"])
+        self._schedule_delayed_refresh()
+
+    @callback
+    def _optimistic_update(
+        self, device_id: str, field: str, value: str
+    ) -> None:
+        """Apply the expected value locally so the UI updates immediately."""
+        if self.data and device_id in self.data:
+            device = self.data[device_id]
+            # Switch fields: store as bool
+            if value in ("0", "1"):
+                device[field] = value == "1"
+            else:
+                # Temperature setpoints: store as float to match _parse_property
+                try:
+                    device[field] = float(value)
+                except (ValueError, TypeError):
+                    device[field] = value
+            self.async_set_updated_data(self.data)
+
+    @callback
+    def _schedule_delayed_refresh(self) -> None:
+        """Refresh from the cloud after a short delay to confirm the command."""
+        async def _delayed() -> None:
+            await asyncio.sleep(self._COMMAND_REFRESH_DELAY)
+            await self.async_request_refresh()
+
+        self.hass.async_create_task(_delayed())
 
 
 # ── Property parser ───────────────────────────────────────────────────────────
@@ -231,8 +281,6 @@ def _parse_property(prop: dict) -> dict[str, Any]:
     # Boolean conversions for switches
     sw_fields = [
         "A2W_SW_ON", "c1_SW_ON", "c2_SW_ON", "DHW_SW_ON", "SWP_SW_ON",
-        "c1R1_SW", "c1R2_SW", "c1R3_SW", "c1R4_SW",
-        "c2R1_SW", "c2R2_SW", "c2R3_SW", "c2R4_SW",
     ]
     for field in sw_fields:
         val = flat.get(field)

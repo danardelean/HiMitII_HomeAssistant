@@ -49,27 +49,6 @@ SWITCH_DESCRIPTIONS: tuple[HimitSwitchDescription, ...] = (
         cmd_type="SWP_SW_ON",
         icon="mdi:pool",
     ),
-    # ── Room switches (C1R1–C1R4, C2R1–C2R4) ─────────────────────────────────
-    *(
-        HimitSwitchDescription(
-            key=f"c1r{i}",
-            name=f"Circuit 1 Room {i}",
-            field=f"c1R{i}_SW",
-            cmd_type=f"C1R{i}_SW",
-            icon="mdi:home-switch",
-        )
-        for i in range(1, 5)
-    ),
-    *(
-        HimitSwitchDescription(
-            key=f"c2r{i}",
-            name=f"Circuit 2 Room {i}",
-            field=f"c2R{i}_SW",
-            cmd_type=f"C2R{i}_SW",
-            icon="mdi:home-switch",
-        )
-        for i in range(1, 5)
-    ),
 )
 
 
