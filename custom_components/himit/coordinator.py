@@ -106,7 +106,11 @@ class HimitCoordinator(DataUpdateCoordinator):
     # ── Device discovery ──────────────────────────────────────────────────────
 
     async def _discover_atw_devices(self) -> None:
-        """Fetch device list and cache ATW (type 2) devices."""
+        """Fetch device list and cache ATW devices.
+
+        The API returns ATW heat pumps in dedicated lists (atwInfoList,
+        hicubeAtwList), not in a generic deviceList.
+        """
         home_id = self._token_data[CONF_HOME_ID]
         try:
             resp = await self.api.get_devices(self.access_token, home_id)
@@ -114,17 +118,16 @@ class HimitCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Device discovery failed: %s", exc)
             return
 
-        # customerDeviceResponse.deviceList — each device has deviceId like "3-2-0-0" (type=2 → ATW)
-        device_list = (
-            resp.get("deviceList")
-            or resp.get("customerDeviceResponse", {}).get("deviceList")
-            or []
+        # ATW devices live in their own lists (from CustomerDeviceResponse)
+        atw = resp.get("atwInfoList") or []
+        atw += resp.get("hicubeAtwList") or []
+        self.atw_devices = [d for d in atw if isinstance(d, dict)]
+
+        _LOGGER.debug(
+            "Discovered %d ATW device(s): %s",
+            len(self.atw_devices),
+            [d.get("deviceNickName", d.get("deviceId")) for d in self.atw_devices],
         )
-        self.atw_devices = [
-            d for d in device_list
-            if str(d.get("deviceId", "")).split("-")[1:2] == ["2"]
-        ]
-        _LOGGER.debug("Discovered %d ATW device(s): %s", len(self.atw_devices), self.atw_devices)
 
     # ── Main poll ─────────────────────────────────────────────────────────────
 
