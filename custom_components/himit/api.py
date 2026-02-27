@@ -4,12 +4,15 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import random
 import time
 import uuid
 from typing import Any
 
 import aiohttp
+
+_LOGGER = logging.getLogger(__name__)
 
 from .const import (
     APP_ID, APP_SECRET, AUTH_BASE, HMT_BASE, LANGUAGE_ID,
@@ -285,6 +288,12 @@ class HimitAPI:
         body["sign"] = compute_sign(sign_params)
         body["properties"] = properties
 
+        _LOGGER.debug(
+            "setDeviceProperty request — wifiId=%s, deviceId=%s, "
+            "properties=%s, token(last6)=…%s",
+            wifi_id, device_id, props_json, access_token[-6:] if access_token else "NONE",
+        )
+
         async with self._session.post(
             f"{HMT_BASE}/himit-dshd/setDeviceProperty",
             json=body,
@@ -292,6 +301,8 @@ class HimitAPI:
         ) as r:
             r.raise_for_status()
             resp = await r.json(content_type=None)
+
+        _LOGGER.debug("setDeviceProperty response — %s", resp)
 
         return self._check(resp, "setDeviceProperty")
 

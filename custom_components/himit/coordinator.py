@@ -9,6 +9,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import HimitAPI, HimitAPIError, HimitAuthError
@@ -17,6 +18,7 @@ from .const import (
     CONF_HOME_ID,
     CONF_REFRESH_TOKEN,
     CONF_REFRESH_EXPIRE_SECS,
+    CONF_SCAN_INTERVAL,
     CONF_TOKEN_CREATED_MS,
     CONF_TOKEN_EXPIRE_SECS,
     DEFAULT_SCAN_INTERVAL,
@@ -39,11 +41,12 @@ class HimitCoordinator(DataUpdateCoordinator):
         api: HimitAPI,
         entry: ConfigEntry,
     ) -> None:
+        scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=scan_interval),
         )
         self.api    = api
         self.entry  = entry
@@ -51,6 +54,9 @@ class HimitCoordinator(DataUpdateCoordinator):
 
         # Discovered ATW devices [{wifiId, deviceId, deviceNickName}]
         self.atw_devices: list[dict] = []
+
+        # Raw API response from device discovery (for diagnostics)
+        self._raw_device_discovery: dict = {}
 
     # ── Token helpers ─────────────────────────────────────────────────────────
 
@@ -84,25 +90,50 @@ class HimitCoordinator(DataUpdateCoordinator):
                 new_data = await self.api.refresh_token(
                     self._token_data[CONF_REFRESH_TOKEN]
                 )
-                self._token_data.update({
-                    CONF_ACCESS_TOKEN:      new_data["access_token"],
-                    CONF_REFRESH_TOKEN:     new_data["refresh_token"],
-                    CONF_TOKEN_CREATED_MS:  new_data["token_created_ms"],
-                    CONF_TOKEN_EXPIRE_SECS: new_data["token_expire_secs"],
-                    CONF_REFRESH_EXPIRE_SECS: new_data["refresh_expire_secs"],
-                })
-                # Persist new tokens to the config entry
-                self.hass.config_entries.async_update_entry(
-                    self.entry, data={**self.entry.data, **self._token_data}
-                )
+                self._apply_new_tokens(new_data)
                 _LOGGER.info("Access token refreshed successfully")
-            except HimitAuthError as exc:
-                _LOGGER.warning("Token refresh failed (%s) — will try on next cycle", exc)
-        else:
-            _LOGGER.warning(
-                "Access token expired and refresh token is no longer valid. "
-                "Re-authenticate in the integration settings."
+                return
+            except HimitAuthError:
+                _LOGGER.warning("Token refresh failed — attempting re-login")
+
+        # Refresh token expired or refresh failed — try a full re-login
+        # using stored credentials before giving up
+        await self._try_relogin()
+
+    async def _try_relogin(self) -> None:
+        """Attempt a full re-login using stored credentials."""
+        from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+
+        username = self.entry.data.get(CONF_USERNAME)
+        password = self.entry.data.get(CONF_PASSWORD)
+        if not username or not password:
+            raise ConfigEntryAuthFailed(
+                "No stored credentials — re-authenticate in integration settings"
             )
+
+        _LOGGER.debug("Attempting re-login for %s", username)
+        try:
+            new_data = await self.api.login(username, password)
+        except HimitAuthError as exc:
+            raise ConfigEntryAuthFailed(
+                "Re-login failed — password may have changed"
+            ) from exc
+
+        self._apply_new_tokens(new_data)
+        _LOGGER.info("Re-login successful — new tokens acquired")
+
+    def _apply_new_tokens(self, new_data: dict) -> None:
+        """Update in-memory token data and persist to config entry."""
+        self._token_data.update({
+            CONF_ACCESS_TOKEN:        new_data["access_token"],
+            CONF_REFRESH_TOKEN:       new_data.get("refresh_token", ""),
+            CONF_TOKEN_CREATED_MS:    new_data.get("token_created_ms", 0),
+            CONF_TOKEN_EXPIRE_SECS:   new_data.get("token_expire_secs", 7200),
+            CONF_REFRESH_EXPIRE_SECS: new_data.get("refresh_expire_secs", 2592000),
+        })
+        self.hass.config_entries.async_update_entry(
+            self.entry, data={**self.entry.data, **self._token_data}
+        )
 
     # ── Device discovery ──────────────────────────────────────────────────────
 
@@ -118,6 +149,9 @@ class HimitCoordinator(DataUpdateCoordinator):
         except HimitAPIError as exc:
             _LOGGER.warning("Device discovery failed: %s", exc)
             return
+
+        # Store raw response for diagnostics
+        self._raw_device_discovery = resp
 
         # ATW devices live in their own lists (from CustomerDeviceResponse)
         atw = resp.get("atwInfoList") or []
@@ -152,7 +186,9 @@ class HimitCoordinator(DataUpdateCoordinator):
                 self.access_token, device_refs
             )
         except HimitAuthError as exc:
-            raise UpdateFailed(f"Authentication error: {exc}") from exc
+            raise ConfigEntryAuthFailed(
+                f"Authentication error: {exc}"
+            ) from exc
         except HimitAPIError as exc:
             raise UpdateFailed(str(exc)) from exc
 
