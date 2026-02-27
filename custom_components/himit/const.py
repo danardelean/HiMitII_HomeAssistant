@@ -11,6 +11,9 @@ CONF_TOKEN_EXPIRE_SECS  = "token_expire_secs"  # lifetime in seconds
 CONF_REFRESH_EXPIRE_SECS = "refresh_expire_secs"
 
 DEFAULT_SCAN_INTERVAL = 30  # seconds
+MIN_SCAN_INTERVAL     = 10  # seconds
+MAX_SCAN_INTERVAL     = 300 # seconds
+CONF_SCAN_INTERVAL    = "scan_interval"
 
 # ── API crypto (reverse-engineered from APK) ──────────────────────────────────
 # rsa_public_key.key — 2048-bit DER base64 (for request signing)

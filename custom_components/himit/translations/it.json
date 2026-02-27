@@ -11,9 +11,25 @@
       },
       "home": {
         "title": "Seleziona abitazione",
-        "description": "Il tuo account ha più abitazioni. Seleziona quella che contiene la pompa di calore.",
+        "description": "Il tuo account ha pi\u00f9 abitazioni. Seleziona quella che contiene la pompa di calore.",
         "data": {
           "home_id": "Abitazione"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ri-autenticazione Hi-Mit II",
+        "description": "La sessione \u00e8 scaduta. Inserisci le credenziali aggiornate.",
+        "data": {
+          "username": "Indirizzo email",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Aggiorna credenziali Hi-Mit II",
+        "description": "Inserisci le nuove credenziali del tuo account Hisense Hi-Mit II.",
+        "data": {
+          "username": "Indirizzo email",
+          "password": "Password"
         }
       }
     },
@@ -21,10 +37,23 @@
       "invalid_auth": "Email o password non validi.",
       "cannot_connect": "Impossibile connettersi al cloud Hi-Mit II. Verifica la connessione a internet.",
       "no_homes": "Nessuna abitazione trovata per questo account.",
-      "unknown": "Errore imprevisto — controlla i log di Home Assistant."
+      "unknown": "Errore imprevisto \u2014 controlla i log di Home Assistant."
     },
     "abort": {
-      "already_configured": "Questa abitazione è già configurata."
+      "already_configured": "Questa abitazione \u00e8 gi\u00e0 configurata.",
+      "reauth_successful": "Ri-autenticazione completata.",
+      "reconfigure_successful": "Credenziali aggiornate con successo."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Hi-Mit II",
+        "description": "Configura le impostazioni dell'integrazione.",
+        "data": {
+          "scan_interval": "Intervallo di aggiornamento (secondi)"
+        }
+      }
     }
   }
 }

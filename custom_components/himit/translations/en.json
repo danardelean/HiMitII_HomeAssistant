@@ -15,16 +15,45 @@
         "data": {
           "home_id": "Home"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Hi-Mit II",
+        "description": "Your session has expired. Please enter your updated credentials.",
+        "data": {
+          "username": "Email address",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Update Hi-Mit II credentials",
+        "description": "Enter your new Hisense Hi-Mit II account credentials.",
+        "data": {
+          "username": "Email address",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "invalid_auth": "Invalid email or password.",
       "cannot_connect": "Could not connect to the Hi-Mit II cloud. Check your internet connection.",
-      "no_homes":  "No homes found for this account.",
-      "unknown":   "Unexpected error — check the Home Assistant logs."
+      "no_homes": "No homes found for this account.",
+      "unknown": "Unexpected error \u2014 check the Home Assistant logs."
     },
     "abort": {
-      "already_configured": "This home is already configured."
+      "already_configured": "This home is already configured.",
+      "reauth_successful": "Re-authentication successful.",
+      "reconfigure_successful": "Credentials updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hi-Mit II options",
+        "description": "Configure integration settings.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
     }
   }
 }
