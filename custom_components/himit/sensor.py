@@ -30,7 +30,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     # ── Actual temperatures (live readings) ──────────────────────────────────
     HimitSensorDescription(
         key="c1_water_actual",
-        name="Circuit 1 Water Temp",
+        translation_key="c1_water_actual",
         field="fixedDid18",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -39,7 +39,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="c2_water_actual",
-        name="Circuit 2 Water Temp",
+        translation_key="c2_water_actual",
         field="fixedDid19",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -48,7 +48,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="dhw_water_actual",
-        name="DHW Water Temp",
+        translation_key="dhw_water_actual",
         field="fixedDid16",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -57,7 +57,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="swp_water_actual",
-        name="Pool Water Temp",
+        translation_key="swp_water_actual",
         field="fixedDid17",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -66,7 +66,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="outdoor_temp",
-        name="Outdoor Ambient Temp",
+        translation_key="outdoor_temp",
         field="swj_Ta",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -76,7 +76,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     # ── Setpoint sensors (read-only view; writable via Number entities) ───────
     HimitSensorDescription(
         key="c1_setpoint",
-        name="Circuit 1 Setpoint",
+        translation_key="c1_setpoint",
         field="Ts_c1_water",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -86,7 +86,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="c2_setpoint",
-        name="Circuit 2 Setpoint",
+        translation_key="c2_setpoint",
         field="Ts_c2_water",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -96,7 +96,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     ),
     HimitSensorDescription(
         key="dhw_setpoint",
-        name="DHW Setpoint",
+        translation_key="dhw_setpoint",
         field="TDHWS",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -108,7 +108,7 @@ SENSOR_DESCRIPTIONS: tuple[HimitSensorDescription, ...] = (
     *(
         HimitSensorDescription(
             key=f"room_temp_r{i}",
-            name=f"Room {i} Temp",
+            translation_key=f"room_temp_r{i}",
             field=f"TsR{i}",
             device_class=SensorDeviceClass.TEMPERATURE,
             state_class=SensorStateClass.MEASUREMENT,

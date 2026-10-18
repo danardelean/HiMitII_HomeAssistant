@@ -23,28 +23,28 @@ class HimitSwitchDescription(SwitchEntityDescription):
 SWITCH_DESCRIPTIONS: tuple[HimitSwitchDescription, ...] = (
     HimitSwitchDescription(
         key="circuit1",
-        name="Circuit 1 (Heating)",
+        translation_key="circuit1",
         field="c1_SW_ON",
         cmd_type="c1_SW_ON",
         icon="mdi:hvac",
     ),
     HimitSwitchDescription(
         key="circuit2",
-        name="Circuit 2 (Heating)",
+        translation_key="circuit2",
         field="c2_SW_ON",
         cmd_type="c2_SW_ON",
         icon="mdi:hvac",
     ),
     HimitSwitchDescription(
         key="dhw",
-        name="Domestic Hot Water",
+        translation_key="dhw",
         field="DHW_SW_ON",
         cmd_type="DHW_SW_ON",
         icon="mdi:water-boiler",
     ),
     HimitSwitchDescription(
         key="swp",
-        name="Swimming Pool",
+        translation_key="swp",
         field="SWP_SW_ON",
         cmd_type="SWP_SW_ON",
         icon="mdi:pool",

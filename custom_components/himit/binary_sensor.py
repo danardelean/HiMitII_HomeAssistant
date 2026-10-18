@@ -26,7 +26,7 @@ class HimitBinarySensorDescription(BinarySensorEntityDescription):
 BINARY_SENSOR_DESCRIPTIONS: tuple[HimitBinarySensorDescription, ...] = (
     HimitBinarySensorDescription(
         key="a2w_running",
-        name="Heat Pump Running",
+        translation_key="a2w_running",
         field="A2W_SW_ON",
         device_class=BinarySensorDeviceClass.RUNNING,
         icon="mdi:heat-pump",

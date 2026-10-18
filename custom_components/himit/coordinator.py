@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+
+import aiohttp
 import logging
 import time
 from datetime import timedelta
@@ -51,6 +53,9 @@ class HimitCoordinator(DataUpdateCoordinator):
         self.api    = api
         self.entry  = entry
         self._token_data = dict(entry.data)  # mutable copy for in-memory updates
+        # Options at setup time - reload only when the user changes them,
+        # not on every token update written to entry.data.
+        self.loaded_options = dict(entry.options)
 
         # Discovered ATW devices [{wifiId, deviceId, deviceNickName}]
         self.atw_devices: list[dict] = []
@@ -93,8 +98,12 @@ class HimitCoordinator(DataUpdateCoordinator):
                 self._apply_new_tokens(new_data)
                 _LOGGER.info("Access token refreshed successfully")
                 return
-            except HimitAuthError:
-                _LOGGER.warning("Token refresh failed — attempting re-login")
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                # Network down / cloud not responding - retry next cycle,
+                # do NOT trigger reauth.
+                raise UpdateFailed(f"Token refresh - network error: {exc}") from exc
+            except HimitAPIError as exc:
+                _LOGGER.warning("Token refresh failed (%s) — attempting re-login", exc)
 
         # Refresh token expired or refresh failed — try a full re-login
         # using stored credentials before giving up
@@ -118,6 +127,9 @@ class HimitCoordinator(DataUpdateCoordinator):
             raise ConfigEntryAuthFailed(
                 "Re-login failed — password may have changed"
             ) from exc
+        except (aiohttp.ClientError, asyncio.TimeoutError, HimitAPIError) as exc:
+            # Temporary cloud problem - do not trigger reauth, retry later.
+            raise UpdateFailed(f"Re-login temporarily failed: {exc}") from exc
 
         self._apply_new_tokens(new_data)
         _LOGGER.info("Re-login successful — new tokens acquired")
@@ -182,15 +194,36 @@ class HimitCoordinator(DataUpdateCoordinator):
         ]
 
         try:
-            props_list = await self.api.get_device_property(
-                self.access_token, device_refs
-            )
+            try:
+                props_list = await self.api.get_device_property(
+                    self.access_token, device_refs
+                )
+            except aiohttp.ClientResponseError as http_exc:
+                # HTTP 401/403 also means the token is invalid
+                if http_exc.status in (401, 403):
+                    raise HimitAuthError(f"HTTP {http_exc.status}") from http_exc
+                raise
         except HimitAuthError as exc:
-            raise ConfigEntryAuthFailed(
-                f"Authentication error: {exc}"
-            ) from exc
+            # Token revoked early (e.g. after logging in on the phone app) -
+            # log in again with stored credentials and retry once.
+            _LOGGER.warning("Token rejected (%s) — re-logging in automatically", exc)
+            await self._try_relogin()
+            try:
+                props_list = await self.api.get_device_property(
+                    self.access_token, device_refs
+                )
+            except HimitAuthError as exc2:
+                raise ConfigEntryAuthFailed(
+                    f"Authentication error after re-login: {exc2}"
+                ) from exc2
+            except HimitAPIError as exc2:
+                raise UpdateFailed(str(exc2)) from exc2
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc2:
+                raise UpdateFailed(f"Network error after re-login: {exc2}") from exc2
         except HimitAPIError as exc:
             raise UpdateFailed(str(exc)) from exc
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            raise UpdateFailed(f"Network error: {exc}") from exc
 
         # Parse each device property into a clean flat dict
         return {

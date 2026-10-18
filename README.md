@@ -2,6 +2,8 @@
 
 A custom Home Assistant integration for the **Hisense Hi-Mit II Air-to-Water heat pump** (ATW), reverse-engineered from the official mobile app APK.
 
+> **Fork notice / Wersja z polskimi nazwami encji.** This is a fork of [danardelean/HiMitII_HomeAssistant](https://github.com/danardelean/HiMitII_HomeAssistant) that adds a Polish translation (entity names, config flow) and the automatic re-login fix. The integration domain (`himit`) is unchanged, so entity IDs stay the same as in the original. It replaces the original integration (do not install both). Credit for the integration goes to the original author. Ta wersja zawiera polskie tłumaczenie nazw encji; identyfikatory encji pozostają bez zmian.
+
 ---
 
 ## Features
@@ -33,7 +35,7 @@ A custom Home Assistant integration for the **Hisense Hi-Mit II Air-to-Water hea
 ### HACS (recommended)
 
 1. In HACS → **Integrations** → ⋮ → **Custom repositories**
-2. Add this repository URL, category **Integration**
+2. Add `https://github.com/elektron81/HiMitII_HomeAssistant`, category **Integration**
 3. Install **Hi-Mit II**
 4. Restart Home Assistant
 

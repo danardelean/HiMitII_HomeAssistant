@@ -1,0 +1,144 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Połącz z Hi-Mit II",
+        "description": "Podaj dane logowania do konta Hisense Hi-Mit II.",
+        "data": {
+          "username": "Adres e-mail",
+          "password": "Hasło"
+        }
+      },
+      "home": {
+        "title": "Wybierz dom",
+        "description": "Twoje konto ma kilka domów. Wybierz ten, w którym jest pompa ciepła.",
+        "data": {
+          "home_id": "Dom"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ponowne uwierzytelnienie Hi-Mit II",
+        "description": "Sesja wygasła. Podaj aktualne dane logowania.",
+        "data": {
+          "username": "Adres e-mail",
+          "password": "Hasło"
+        }
+      },
+      "reconfigure": {
+        "title": "Zmień dane logowania Hi-Mit II",
+        "description": "Podaj nowe dane logowania do konta Hisense Hi-Mit II.",
+        "data": {
+          "username": "Adres e-mail",
+          "password": "Hasło"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Nieprawidłowy adres e-mail lub hasło.",
+      "cannot_connect": "Nie można połączyć się z chmurą Hi-Mit II. Sprawdź połączenie z internetem.",
+      "no_homes": "Nie znaleziono domów dla tego konta.",
+      "unknown": "Nieoczekiwany błąd – sprawdź logi Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Ten dom jest już skonfigurowany.",
+      "reauth_successful": "Ponowne uwierzytelnienie zakończone powodzeniem.",
+      "reconfigure_successful": "Dane logowania zostały zaktualizowane."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Hi-Mit II",
+        "description": "Skonfiguruj ustawienia integracji.",
+        "data": {
+          "scan_interval": "Częstotliwość odświeżania (sekundy)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "c1_water_actual": {
+        "name": "Obieg 1 – temperatura wody"
+      },
+      "c2_water_actual": {
+        "name": "Obieg 2 – temperatura wody"
+      },
+      "dhw_water_actual": {
+        "name": "CWU – temperatura wody"
+      },
+      "swp_water_actual": {
+        "name": "Basen – temperatura wody"
+      },
+      "outdoor_temp": {
+        "name": "Temperatura zewnętrzna"
+      },
+      "c1_setpoint": {
+        "name": "Obieg 1 – temperatura zadana"
+      },
+      "c2_setpoint": {
+        "name": "Obieg 2 – temperatura zadana"
+      },
+      "dhw_setpoint": {
+        "name": "CWU – temperatura zadana"
+      },
+      "room_temp_r1": {
+        "name": "Pomieszczenie 1 – temperatura"
+      },
+      "room_temp_r2": {
+        "name": "Pomieszczenie 2 – temperatura"
+      },
+      "room_temp_r3": {
+        "name": "Pomieszczenie 3 – temperatura"
+      },
+      "room_temp_r4": {
+        "name": "Pomieszczenie 4 – temperatura"
+      },
+      "room_temp_r5": {
+        "name": "Pomieszczenie 5 – temperatura"
+      },
+      "room_temp_r6": {
+        "name": "Pomieszczenie 6 – temperatura"
+      },
+      "room_temp_r7": {
+        "name": "Pomieszczenie 7 – temperatura"
+      },
+      "room_temp_r8": {
+        "name": "Pomieszczenie 8 – temperatura"
+      }
+    },
+    "binary_sensor": {
+      "a2w_running": {
+        "name": "Pompa ciepła pracuje"
+      }
+    },
+    "switch": {
+      "circuit1": {
+        "name": "Obieg 1 (ogrzewanie)"
+      },
+      "circuit2": {
+        "name": "Obieg 2 (ogrzewanie)"
+      },
+      "dhw": {
+        "name": "Ciepła woda użytkowa (CWU)"
+      },
+      "swp": {
+        "name": "Basen"
+      }
+    },
+    "number": {
+      "c1_setpoint": {
+        "name": "Obieg 1 – temperatura zadana"
+      },
+      "c2_setpoint": {
+        "name": "Obieg 2 – temperatura zadana"
+      },
+      "dhw_setpoint": {
+        "name": "CWU – temperatura zadana"
+      },
+      "swp_setpoint": {
+        "name": "Basen – temperatura zadana"
+      }
+    }
+  }
+}

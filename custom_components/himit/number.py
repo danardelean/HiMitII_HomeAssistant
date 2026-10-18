@@ -34,7 +34,7 @@ class HimitNumberDescription(NumberEntityDescription):
 NUMBER_DESCRIPTIONS: tuple[HimitNumberDescription, ...] = (
     HimitNumberDescription(
         key="c1_setpoint",
-        name="Circuit 1 Setpoint",
+        translation_key="c1_setpoint",
         field="Ts_c1_water",
         cmd_type="Ts_c1_water",
         min_field="fixedDid27",    # 27°C heating / fixedDid25 (12°C) is cooling
@@ -49,7 +49,7 @@ NUMBER_DESCRIPTIONS: tuple[HimitNumberDescription, ...] = (
     ),
     HimitNumberDescription(
         key="c2_setpoint",
-        name="Circuit 2 Setpoint",
+        translation_key="c2_setpoint",
         field="Ts_c2_water",
         cmd_type="Ts_c2_water",
         min_field="fixedDid27",    # 27°C default
@@ -64,7 +64,7 @@ NUMBER_DESCRIPTIONS: tuple[HimitNumberDescription, ...] = (
     ),
     HimitNumberDescription(
         key="dhw_setpoint",
-        name="DHW Setpoint",
+        translation_key="dhw_setpoint",
         field="TDHWS",
         cmd_type="TDHWS",
         min_field="fixedDid29",    # 40°C default
@@ -79,7 +79,7 @@ NUMBER_DESCRIPTIONS: tuple[HimitNumberDescription, ...] = (
     ),
     HimitNumberDescription(
         key="swp_setpoint",
-        name="Pool Setpoint",
+        translation_key="swp_setpoint",
         field="Tswps",
         cmd_type="Tswps",
         min_field="fixedDid31",    # 24°C default
