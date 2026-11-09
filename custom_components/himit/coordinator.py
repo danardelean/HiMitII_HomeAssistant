@@ -7,6 +7,8 @@ import time
 from datetime import timedelta
 from typing import Any
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -30,6 +32,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # Refresh the access token 5 minutes before it expires
 _TOKEN_REFRESH_BUFFER = 5 * 60  # seconds
+
+# Letture cloud fallite consecutive tollerate (mantenendo gli ultimi valori)
+_MAX_TOLERATED_FAILURES = 3
 
 
 class HimitCoordinator(DataUpdateCoordinator):
@@ -57,6 +62,11 @@ class HimitCoordinator(DataUpdateCoordinator):
 
         # Raw API response from device discovery (for diagnostics)
         self._raw_device_discovery: dict = {}
+
+        # Opzioni attive (per evitare reload su aggiornamenti dei soli token)
+        self.options_snapshot: dict = dict(entry.options)
+        # Letture cloud fallite consecutive
+        self._consecutive_failures = 0
 
     # ── Token helpers ─────────────────────────────────────────────────────────
 
@@ -93,8 +103,16 @@ class HimitCoordinator(DataUpdateCoordinator):
                 self._apply_new_tokens(new_data)
                 _LOGGER.info("Access token refreshed successfully")
                 return
-            except HimitAuthError:
-                _LOGGER.warning("Token refresh failed — attempting re-login")
+            except HimitAPIError as exc:
+                # 2026-09-03: il server risponde al refresh con resultCode "1"
+                # e messaggio "token非法" (token illegale), che _check mappa su
+                # HimitAPIError e NON su HimitAuthError. Con il solo
+                # "except HimitAuthError" questo ramo non veniva mai raggiunto:
+                # l'eccezione usciva da _async_update_data come "Unexpected
+                # error" ogni 30 s e il re-login con le credenziali salvate
+                # restava codice morto. Qualunque errore del server sul refresh
+                # va trattato come token non piu' valido.
+                _LOGGER.warning("Token refresh failed (%s) — attempting re-login", exc)
 
         # Refresh token expired or refresh failed — try a full re-login
         # using stored credentials before giving up
@@ -114,9 +132,13 @@ class HimitCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Attempting re-login for %s", username)
         try:
             new_data = await self.api.login(username, password)
-        except HimitAuthError as exc:
+        except HimitAPIError as exc:
+            # Stessa ragione: "User name or password error" arriva con
+            # resultCode "1" → HimitAPIError. ConfigEntryAuthFailed ferma il
+            # polling e apre la richiesta di ri-autenticazione nell'interfaccia
+            # invece di un traceback ogni 30 s.
             raise ConfigEntryAuthFailed(
-                "Re-login failed — password may have changed"
+                f"Re-login failed — password may have changed ({exc})"
             ) from exc
 
         self._apply_new_tokens(new_data)
@@ -167,7 +189,39 @@ class HimitCoordinator(DataUpdateCoordinator):
     # ── Main poll ─────────────────────────────────────────────────────────────
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch latest state from the cloud. Called every scan interval."""
+        """Called every scan interval.
+
+        2026-11-02: una singola lettura fallita del cloud (timeout, errore
+        di rete o errore del server) rendeva subito "unavailable" tutte le
+        entita'. Ora si tollerano fino a _MAX_TOLERATED_FAILURES letture
+        consecutive fallite (~90 s con polling a 30 s) mantenendo gli ultimi
+        valori validi. Gli errori di autenticazione non vengono mascherati.
+        """
+        try:
+            data = await self._fetch_data()
+        except ConfigEntryAuthFailed:
+            raise
+        except (HimitAPIError, UpdateFailed, aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            self._consecutive_failures += 1
+            if self.data and self._consecutive_failures <= _MAX_TOLERATED_FAILURES:
+                _LOGGER.warning(
+                    "Lettura dal cloud fallita (%d/%d): %s - mantengo gli ultimi valori",
+                    self._consecutive_failures, _MAX_TOLERATED_FAILURES, exc,
+                )
+                return self.data
+            raise UpdateFailed(
+                f"Cloud non raggiungibile ({self._consecutive_failures} letture fallite): {exc}"
+            ) from exc
+        if self._consecutive_failures:
+            _LOGGER.info(
+                "Lettura dal cloud di nuovo riuscita dopo %d tentativi falliti",
+                self._consecutive_failures,
+            )
+        self._consecutive_failures = 0
+        return data
+
+    async def _fetch_data(self) -> dict[str, Any]:
+        """Fetch latest state from the cloud."""
         await self._ensure_token()
 
         if not self.atw_devices:

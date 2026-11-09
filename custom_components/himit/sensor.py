@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -17,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import HimitCoordinator
-from .entity import HimitEntity
+from .entity import STALE_AFTER_SECONDS, HimitEntity
 
 
 @dataclass(frozen=True)
@@ -131,6 +132,7 @@ async def async_setup_entry(
     for device_id in coordinator.data:
         for description in SENSOR_DESCRIPTIONS:
             entities.append(HimitSensor(coordinator, device_id, description))
+        entities.append(HimitLastDataSensor(coordinator, device_id))
 
     async_add_entities(entities)
 
@@ -156,8 +158,47 @@ class HimitSensor(HimitEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
+        # 2026-11-07: anche "_data_is_fresh" — con il modulo Wi-Fi bloccato
+        # il cloud restituisce l'ultimo stato noto per ore.
         return (
             super().available
             and self._device_id in self.coordinator.data
             and self.native_value is not None
+            and self._data_is_fresh
         )
+
+
+class HimitLastDataSensor(HimitEntity, SensorEntity):
+    """Ora dell'ultimo dato ricevuto dalla pompa tramite il cloud (2026-11-07).
+
+    Resta disponibile anche quando i dati sono vecchi: serve proprio a
+    vedere da quando la pompa non comunica.
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:cloud-clock-outline"
+    _attr_name = "Ultimo dato dalla pompa"
+
+    def __init__(self, coordinator: HimitCoordinator, device_id: str) -> None:
+        super().__init__(coordinator, device_id)
+        self._attr_unique_id = f"{device_id}_last_data"
+
+    @property
+    def native_value(self) -> datetime | None:
+        ts = self._device_timestamp
+        if ts is None:
+            return None
+        return datetime.fromtimestamp(ts, tz=timezone.utc)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        age = self._data_age_seconds
+        return {
+            "minuti_dall_ultimo_dato": round(age / 60, 1) if age is not None else None,
+            "dati_freschi": self._data_is_fresh,
+            "soglia_minuti": STALE_AFTER_SECONDS // 60,
+        }
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._device_id in self.coordinator.data

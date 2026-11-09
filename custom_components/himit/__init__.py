@@ -30,6 +30,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # 2026-11-02: snapshot delle opzioni. Il listener viene chiamato da HA a
+    # OGNI async_update_entry, compreso il salvataggio dei token che il
+    # coordinator fa ogni ~1h55 (token da 2 h). Prima ricaricava sempre
+    # l'integrazione → tutte le entità "unavailable" ogni 1h55. Ora ricarica
+    # solo se sono cambiate davvero le opzioni (es. scan_interval).
+    coordinator.options_snapshot = dict(entry.options)
+
     # Listen for option updates
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
@@ -45,5 +52,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle options updates."""
+    """Handle options updates (ignore data-only updates such as token refresh)."""
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if coordinator is not None and dict(entry.options) == getattr(
+        coordinator, "options_snapshot", None
+    ):
+        _LOGGER.debug("Config entry data updated (token refresh) — no reload")
+        return
     await hass.config_entries.async_reload(entry.entry_id)
