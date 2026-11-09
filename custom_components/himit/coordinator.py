@@ -30,8 +30,12 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Refresh the access token 5 minutes before it expires
-_TOKEN_REFRESH_BUFFER = 5 * 60  # seconds
+# Refresh the access token 1 hour before it expires.
+# 2026-11-09: the token actually lives 24 h (accessTokenExpiredTime=86400);
+# before api.py read the wrong field names it was assumed to be 2 h, which
+# produced a refresh attempt (and, since the refresh token is only accepted
+# shortly after recent auth activity, a password re-login) every 1h55.
+_TOKEN_REFRESH_BUFFER = 60 * 60  # seconds
 
 # Letture cloud fallite consecutive tollerate (mantenendo gli ultimi valori)
 _MAX_TOLERATED_FAILURES = 3
@@ -104,15 +108,13 @@ class HimitCoordinator(DataUpdateCoordinator):
                 _LOGGER.info("Access token refreshed successfully")
                 return
             except HimitAPIError as exc:
-                # 2026-09-03: il server risponde al refresh con resultCode "1"
-                # e messaggio "token非法" (token illegale), che _check mappa su
-                # HimitAPIError e NON su HimitAuthError. Con il solo
-                # "except HimitAuthError" questo ramo non veniva mai raggiunto:
-                # l'eccezione usciva da _async_update_data come "Unexpected
-                # error" ogni 30 s e il re-login con le credenziali salvate
-                # restava codice morto. Qualunque errore del server sul refresh
-                # va trattato come token non piu' valido.
-                _LOGGER.warning("Token refresh failed (%s) — attempting re-login", exc)
+                # 2026-11-09: il server accetta il refresh token solo se c'e'
+                # stata attivita' recente sull'auth-gateway (login o refresh);
+                # dopo ore di inattivita' risponde resultCode 1 / errorCode
+                # 611702 "token非法". E' il comportamento normale (l'app
+                # ufficiale fa lo stesso fallback con la password salvata),
+                # quindi non e' un warning: si passa al re-login.
+                _LOGGER.info("Token refresh not accepted (%s) — logging in again", exc)
 
         # Refresh token expired or refresh failed — try a full re-login
         # using stored credentials before giving up
@@ -240,9 +242,23 @@ class HimitCoordinator(DataUpdateCoordinator):
                 self.access_token, device_refs
             )
         except HimitAuthError as exc:
-            raise ConfigEntryAuthFailed(
-                f"Authentication error: {exc}"
-            ) from exc
+            # 2026-11-09: access token rifiutato prima della scadenza prevista
+            # (revoca lato server, cambio password, ecc.). Un re-login con le
+            # credenziali salvate risolve senza bloccare l'integrazione; solo
+            # se anche quello fallisce _try_relogin alza ConfigEntryAuthFailed
+            # e HA chiede la ri-autenticazione.
+            _LOGGER.info("Access token rejected (%s) — logging in again", exc)
+            await self._try_relogin()
+            try:
+                props_list = await self.api.get_device_property(
+                    self.access_token, device_refs
+                )
+            except HimitAuthError as exc2:
+                raise ConfigEntryAuthFailed(
+                    f"Authentication error after re-login: {exc2}"
+                ) from exc2
+            except HimitAPIError as exc2:
+                raise UpdateFailed(str(exc2)) from exc2
         except HimitAPIError as exc:
             raise UpdateFailed(str(exc)) from exc
 

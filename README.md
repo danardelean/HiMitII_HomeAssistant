@@ -61,9 +61,17 @@ Restart Home Assistant.
 
 The integration handles authentication automatically:
 
-- The access token is **refreshed silently** before it expires using the stored refresh token
-- If the refresh token also expires, a **Re-authenticate** prompt appears in the Integrations page — no need to delete and re-add the integration
-- All tokens are stored securely in the Home Assistant config entry (`.storage/`)
+- The access token lives **24 h** (`accessTokenExpiredTime=86400`); the integration refreshes it 1 h before expiry using the stored refresh token
+- The cloud only accepts a refresh token shortly after recent auth activity (otherwise `errorCode 611702 "token非法"`). When the refresh is rejected the integration **logs in again with the stored credentials** — the same fallback the official app uses. In practice this means one login per day.
+- If the access token is rejected mid-way (revoked, password changed) a re-login is attempted once; only if that fails does a **Re-authenticate** prompt appear in the Integrations page
+- Logins are multi-session: a login from Home Assistant does not invalidate the mobile app's session (and vice versa)
+- All tokens are stored in the Home Assistant config entry (`.storage/`)
+
+### Stale data detection
+
+The cloud keeps answering with the last known state even when the heat pump's Wi-Fi module stops publishing. Every reading carries the device `timeStamp`; entities become `unavailable` when it is older than **45 minutes** (`STALE_AFTER_SECONDS` in `entity.py`) and the **"Ultimo dato dalla pompa"** timestamp sensor shows when the pump last reported.
+
+The pump reports every ~1 min while running but only a heartbeat every **30 min** in standby, so do not lower the threshold below ~35 min or you will get false `unavailable` periods.
 
 ---
 
