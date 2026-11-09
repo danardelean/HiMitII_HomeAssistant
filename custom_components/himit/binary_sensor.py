@@ -70,8 +70,10 @@ class HimitBinarySensor(HimitEntity, BinarySensorEntity):
 
     @property
     def available(self) -> bool:
+        # 2026-11-07: anche "_data_is_fresh" (vedi entity.py).
         return (
             super().available
             and self._device_id in self.coordinator.data
             and self._device_data.get(self.entity_description.field) is not None
+            and self._data_is_fresh
         )
