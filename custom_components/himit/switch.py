@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import CONF_HOME_ID, DOMAIN
 from .coordinator import HimitCoordinator
 from .entity import HimitEntity
 
@@ -80,7 +80,7 @@ class HimitSwitch(HimitEntity, SwitchEntity):
     ) -> None:
         super().__init__(coordinator, device_id)
         self.entity_description = description
-        self._attr_unique_id = f"{device_id}_{description.key}"
+        self._attr_unique_id = f"{coordinator.entry.data[CONF_HOME_ID]}_{device_id}_{description.key}"
 
     @property
     def is_on(self) -> bool | None:

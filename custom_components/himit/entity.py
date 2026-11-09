@@ -6,7 +6,7 @@ import time
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import CONF_HOME_ID, DOMAIN
 from .coordinator import HimitCoordinator
 
 # 2026-11-07: il modulo Wi-Fi della pompa a volte smette di comunicare col
@@ -74,7 +74,7 @@ class HimitEntity(CoordinatorEntity[HimitCoordinator]):
     def device_info(self) -> DeviceInfo:
         name = self._device_data.get("_name", "Hi-Mit II")
         return DeviceInfo(
-            identifiers={(DOMAIN, self._device_id)},
+            identifiers={(DOMAIN, f"{self.coordinator.entry.data[CONF_HOME_ID]}_{self._device_id}")},
             name=name,
             manufacturer="Hisense",
             model="Hi-Mit II ATW",
