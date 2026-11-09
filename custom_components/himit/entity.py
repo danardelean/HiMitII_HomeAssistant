@@ -10,12 +10,18 @@ from .const import DOMAIN
 from .coordinator import HimitCoordinator
 
 # 2026-11-07: il modulo Wi-Fi della pompa a volte smette di comunicare col
-# cloud (05/11 dalle 18:45, 07/11 dalle ~01:40) mentre il cloud continua a
-# rispondere con l'ultimo stato noto. Il campo "timeStamp" (ms) dello stato
-# del dispositivo e' l'ora dell'ultimo dato ricevuto dalla pompa: di norma
-# avanza ogni pochi minuti. Oltre questa soglia le misure diventano
-# "unavailable" invece di mostrare valori vecchi come se fossero attuali.
-STALE_AFTER_SECONDS = 20 * 60
+# cloud (05/11 dalle 18:45, 07/11 dalle ~01:40, 09/11 dalle 16:08) mentre il
+# cloud continua a rispondere con l'ultimo stato noto. Il campo "timeStamp"
+# (ms) dello stato del dispositivo e' l'ora dell'ultimo dato ricevuto dalla
+# pompa. Oltre questa soglia le misure diventano "unavailable" invece di
+# mostrare valori vecchi come se fossero attuali.
+#
+# 2026-11-09: dalla history di 24 h la pompa manda dati ogni ~1 min quando
+# e' attiva, ma in standby solo un heartbeat ogni 30 min esatti (:12 e :42
+# UTC). Con la soglia precedente di 20 min le entita' andavano "unavailable"
+# per 10 min ogni mezz'ora senza nessun guasto. 45 min copre l'heartbeat
+# con margine e segnala comunque un modulo bloccato entro tre quarti d'ora.
+STALE_AFTER_SECONDS = 45 * 60
 
 
 class HimitEntity(CoordinatorEntity[HimitCoordinator]):
